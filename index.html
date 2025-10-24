@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ZipHQ Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-6">
+<div class="max-w-7xl mx-auto">
+<h1 class="text-3xl font-bold mb-4">ZipHQ Invoice Dashboard</h1>
+<p class="text-gray-600 mb-6">Real-time procurement analytics</p>
+<div class="bg-white rounded-lg p-6 shadow">
+<button id="fetchBtn" class="bg-blue-600 text-white px-6 py-2 rounded">Fetch Invoices</button>
+<div id="output" class="mt-4"></div>
+</div>
+</div>
+<script>
+const API='https://ziphq-middleware-connector-production.up.railway.app/api';
+const TOKEN='db590f86e8119131dfdfa2ac42552a3bd371c3f83f8935a8eed400e64a7ad810';
+document.getElementById('fetchBtn').onclick=async()=>{
+const res=await fetch(API+'/invoices?page_size=10',{headers:{'Authorization':'Bearer '+TOKEN}});
+const data=await res.json();
+document.getElementById('output').innerHTML='<p>Total: '+data.data.pagination.total+'</p>';
+};
+</script>
+</body>
+</html>
