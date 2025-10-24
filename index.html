@@ -19,30 +19,17 @@
       <p class="text-gray-600">Real-time procurement analytics and insights</p>
     </div>
 
-    <!-- Navigation Tabs -->
     <div class="mb-6 border-b border-gray-200">
       <nav class="-mb-px flex space-x-8">
-        <button onclick="showTab('invoices')" id="tab-invoices" class="tab-btn border-b-2 border-blue-500 py-4 px-1 text-sm font-medium text-blue-600">
-          Invoices
-        </button>
-        <button onclick="showTab('metrics')" id="tab-metrics" class="tab-btn border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
-          Metrics
-        </button>
-        <button onclick="showTab('requests')" id="tab-requests" class="tab-btn border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
-          Requests
-        </button>
-        <button onclick="showTab('pos')" id="tab-pos" class="tab-btn border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
-          Purchase Orders
-        </button>
-        <button onclick="showTab('vendors')" id="tab-vendors" class="tab-btn border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
-          Vendor Spend
-        </button>
+        <button onclick="showTab('invoices')" id="tab-invoices" class="tab-btn border-b-2 border-blue-500 py-4 px-1 text-sm font-medium text-blue-600">Invoices</button>
+        <button onclick="showTab('metrics')" id="tab-metrics" class="tab-btn border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700">Metrics</button>
+        <button onclick="showTab('vendors')" id="tab-vendors" class="tab-btn border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700">Vendor Spend</button>
       </nav>
     </div>
 
     <!-- Invoices Tab -->
     <div id="content-invoices" class="tab-content">
-      <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+      <div class="bg-white rounded-lg shadow p-4 mb-6">
         <div class="flex flex-wrap gap-4 items-end">
           <div class="flex-1 min-w-[200px]">
             <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
@@ -50,223 +37,130 @@
               <option value="">All Statuses</option>
               <option value="PENDING_APPROVAL">Pending Approval</option>
               <option value="APPROVED">Approved</option>
-              <option value="REJECTED">Rejected</option>
               <option value="INITIAL">Initial</option>
-              <option value="ARCHIVED">Archived</option>
               <option value="PAID">Paid</option>
             </select>
           </div>
           <div class="w-32">
             <label class="block text-sm font-medium text-gray-700 mb-2">Per Page</label>
             <select id="pageSize" class="w-full px-3 py-2 border border-gray-300 rounded-md">
-              <option value="10">10</option>
               <option value="20" selected>20</option>
               <option value="50">50</option>
+              <option value="100">100</option>
             </select>
           </div>
-          <button id="fetchBtn" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium transition-colors">
-            Fetch Invoices
-          </button>
+          <button id="fetchBtn" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium">Fetch Invoices</button>
         </div>
-        <div id="stats" class="mt-4 pt-4 border-t border-gray-200 hidden">
-          <p class="text-sm text-gray-600"></p>
-        </div>
+        <div id="invStats" class="mt-4 pt-4 border-t hidden"><p class="text-sm text-gray-600"></p></div>
       </div>
-
-      <div id="errorBox" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 hidden">
-        <p class="text-red-800 font-medium"></p>
-      </div>
-
-      <div id="loading" class="bg-white rounded-lg shadow-sm p-12 text-center hidden">
+      <div id="invLoading" class="bg-white rounded-lg shadow p-12 text-center hidden">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p class="text-gray-600">Fetching invoices...</p>
+        <p class="text-gray-600">Loading...</p>
       </div>
-
-      <div id="tableContainer" class="bg-white rounded-lg shadow-sm overflow-hidden hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead class="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice #</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vendor</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
-              </tr>
-            </thead>
-            <tbody id="tableBody" class="divide-y divide-gray-200"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div id="emptyState" class="bg-white rounded-lg shadow-sm p-12 text-center">
-        <div class="text-gray-400 mb-4">
-          <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-          </svg>
-        </div>
-        <h3 class="text-lg font-medium text-gray-900 mb-2">No Invoices Yet</h3>
-        <p class="text-gray-600 mb-4">Click "Fetch Invoices" to load data from ZipHQ</p>
+      <div id="invTable" class="bg-white rounded-lg shadow overflow-hidden hidden">
+        <table class="w-full">
+          <thead class="bg-gray-50 border-b">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice #</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vendor</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
+            </tr>
+          </thead>
+          <tbody id="invBody" class="divide-y divide-gray-200"></tbody>
+        </table>
       </div>
     </div>
 
     <!-- Metrics Tab -->
     <div id="content-metrics" class="tab-content hidden">
-      <button id="fetchMetrics" class="mb-6 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium transition-colors">
-        Load Metrics (Since Feb 1, 2025)
-      </button>
-
-      <div id="metricsLoading" class="bg-white rounded-lg shadow-sm p-12 text-center hidden">
+      <button id="fetchMetrics" class="mb-6 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium">Load All Metrics (Since Feb 1, 2025)</button>
+      <div id="metLoading" class="bg-white rounded-lg shadow p-12 text-center hidden">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p id="loadingText" class="text-gray-600">Fetching all invoices...</p>
-        <p id="loadingProgress" class="text-sm text-gray-500 mt-2"></p>
+        <p id="metLoadText" class="text-gray-600">Fetching invoices...</p>
+        <p id="metProgress" class="text-sm text-gray-500 mt-2"></p>
       </div>
-
-      <div id="metricsContent" class="hidden">
-        <!-- Stat Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          <div class="stat-card bg-white rounded-lg shadow-sm p-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-600">Total Invoices</p>
-                <p id="totalInvoices" class="text-3xl font-bold text-gray-900 mt-2">-</p>
-                <p class="text-xs text-gray-500 mt-1">Since Feb 1, 2025</p>
-              </div>
-              <div class="p-3 bg-blue-100 rounded-full">
-                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-              </div>
-            </div>
+      <div id="metContent" class="hidden">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div class="stat-card bg-white rounded-lg shadow p-6">
+            <p class="text-sm font-medium text-gray-600">Total Invoices</p>
+            <p id="metTotal" class="text-3xl font-bold text-gray-900 mt-2">0</p>
+            <p class="text-xs text-gray-500 mt-1">Since Feb 1, 2025</p>
           </div>
-
-          <div class="stat-card bg-white rounded-lg shadow-sm p-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-600">Avg Coding Time</p>
-                <p id="avgCodingTime" class="text-3xl font-bold text-gray-900 mt-2">-</p>
-                <p class="text-xs text-gray-500 mt-1">days</p>
-              </div>
-              <div class="p-3 bg-yellow-100 rounded-full">
-                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-              </div>
-            </div>
+          <div class="stat-card bg-white rounded-lg shadow p-6">
+            <p class="text-sm font-medium text-gray-600">Avg Coding Time</p>
+            <p id="metAvgTime" class="text-3xl font-bold text-gray-900 mt-2">-</p>
+            <p class="text-xs text-gray-500 mt-1">days</p>
           </div>
-
-          <div class="stat-card bg-white rounded-lg shadow-sm p-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-600">Pending Approvals</p>
-                <p id="pendingApprovals" class="text-3xl font-bold text-gray-900 mt-2">-</p>
-              </div>
-              <div class="p-3 bg-orange-100 rounded-full">
-                <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                </svg>
-              </div>
-            </div>
+          <div class="stat-card bg-white rounded-lg shadow p-6">
+            <p class="text-sm font-medium text-gray-600">Pending Approval</p>
+            <p id="metPending" class="text-3xl font-bold text-gray-900 mt-2">0</p>
           </div>
-
-          <div class="stat-card bg-white rounded-lg shadow-sm p-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-600">Total Spend</p>
-                <p id="totalSpend" class="text-3xl font-bold text-gray-900 mt-2">-</p>
-              </div>
-              <div class="p-3 bg-green-100 rounded-full">
-                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-              </div>
-            </div>
+          <div class="stat-card bg-white rounded-lg shadow p-6">
+            <p class="text-sm font-medium text-gray-600">Total Spend</p>
+            <p id="metSpend" class="text-3xl font-bold text-gray-900 mt-2">$0</p>
           </div>
         </div>
-
-        <!-- Charts Row 1 -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div class="bg-white rounded-lg shadow-sm p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Invoices by Status</h3>
+          <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold mb-4">Invoices by Status</h3>
             <canvas id="statusChart"></canvas>
           </div>
-
-          <div class="bg-white rounded-lg shadow-sm p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Coding Time Distribution</h3>
-            <canvas id="codingTimeChart"></canvas>
+          <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold mb-4">Coding Time Distribution</h3>
+            <canvas id="timeChart"></canvas>
           </div>
         </div>
-
-        <!-- Charts Row 2 -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div class="bg-white rounded-lg shadow-sm p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Top Departments by Spend</h3>
-            <canvas id="departmentChart"></canvas>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold mb-4">Top 10 Departments by Spend</h3>
+            <canvas id="deptChart"></canvas>
           </div>
-
-          <div class="bg-white rounded-lg shadow-sm p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Top Invoice Coders</h3>
-            <div id="coderLeaderboard" class="overflow-x-auto">
-              <table class="w-full">
-                <thead class="bg-gray-50">
-                  <tr>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Rank</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Coder</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Invoices Coded</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Avg Time (days)</th>
-                  </tr>
-                </thead>
-                <tbody id="coderTableBody" class="divide-y divide-gray-200">
-                </tbody>
-              </table>
-            </div>
+          <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold mb-4">Invoice Coders (Isheba & Kevin)</h3>
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Coder</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Invoices</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Avg Days</th>
+                </tr>
+              </thead>
+              <tbody id="coderTable" class="divide-y"></tbody>
+            </table>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Other tabs placeholders -->
-    <div id="content-requests" class="tab-content hidden">
-      <div class="bg-white rounded-lg shadow-sm p-12 text-center">
-        <h3 class="text-lg font-medium text-gray-900 mb-2">Requests Coming Soon</h3>
-        <p class="text-gray-600">Building this section next...</p>
-      </div>
-    </div>
-
-    <div id="content-pos" class="tab-content hidden">
-      <div class="bg-white rounded-lg shadow-sm p-12 text-center">
-        <h3 class="text-lg font-medium text-gray-900 mb-2">Purchase Orders Coming Soon</h3>
-        <p class="text-gray-600">Building this section next...</p>
-      </div>
-    </div>
-
+    <!-- Vendors Tab -->
     <div id="content-vendors" class="tab-content hidden">
-      <div class="bg-white rounded-lg shadow-sm p-12 text-center">
-        <h3 class="text-lg font-medium text-gray-900 mb-2">Vendor Spend Coming Soon</h3>
-        <p class="text-gray-600">Top vendors, spend trends, and analysis...</p>
+      <button id="fetchVendors" class="mb-6 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium">Load Vendor Spend</button>
+      <div id="vendContent" class="hidden">
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-semibold mb-4">Top 20 Vendors by Spend</h3>
+          <table class="w-full">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Rank</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Vendor</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Total Spend</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Invoices</th>
+              </tr>
+            </thead>
+            <tbody id="vendTable" class="divide-y"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
 
   <script>
-    const API_BASE = 'https://ziphq-middleware-connector-production.up.railway.app/api';
-    const AUTH_TOKEN = 'db590f86e8119131dfdfa2ac42552a3bd371c3f83f8935a8eed400e64a7ad810';
-    const FEB_1_2025 = new Date('2025-02-01T00:00:00Z');
-
-    const elements = {
-      fetchBtn: document.getElementById('fetchBtn'),
-      statusFilter: document.getElementById('statusFilter'),
-      pageSize: document.getElementById('pageSize'),
-      errorBox: document.getElementById('errorBox'),
-      loading: document.getElementById('loading'),
-      tableContainer: document.getElementById('tableContainer'),
-      tableBody: document.getElementById('tableBody'),
-      emptyState: document.getElementById('emptyState'),
-      stats: document.getElementById('stats')
-    };
-
+    const API = 'https://ziphq-middleware-connector-production.up.railway.app/api';
+    const TOKEN = 'db590f86e8119131dfdfa2ac42552a3bd371c3f83f8935a8eed400e64a7ad810';
+    const FEB_1_2025 = new Date('2025-02-01T00:00:00Z').getTime();
     let charts = {};
 
     function showTab(tab) {
@@ -275,335 +169,193 @@
         el.classList.remove('border-blue-500', 'text-blue-600');
         el.classList.add('border-transparent', 'text-gray-500');
       });
-
       document.getElementById('content-' + tab).classList.remove('hidden');
-      document.getElementById('tab-' + tab).classList.remove('border-transparent', 'text-gray-500');
-      document.getElementById('tab-' + tab).classList.add('border-blue-500', 'text-blue-600');
+      const btn = document.getElementById('tab-' + tab);
+      btn.classList.remove('border-transparent', 'text-gray-500');
+      btn.classList.add('border-blue-500', 'text-blue-600');
     }
 
-    function showError(message) {
-      elements.errorBox.querySelector('p').textContent = 'Error: ' + message;
-      elements.errorBox.classList.remove('hidden');
-      elements.loading.classList.add('hidden');
-      elements.tableContainer.classList.add('hidden');
-      elements.emptyState.classList.add('hidden');
+    function fmt(n, c = 'USD') {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: c }).format(n || 0);
     }
 
-    function hideError() {
-      elements.errorBox.classList.add('hidden');
+    function fmtDate(d) {
+      if (!d) return 'N/A';
+      return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
 
-    function formatCurrency(amount, currency = 'USD') {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency }).format(amount);
-    }
-
-    function formatDate(dateStr) {
-      if (!dateStr) return 'N/A';
-      return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    }
-
-    function getStatusBadge(status) {
-      const styles = {
+    function badge(s) {
+      const colors = {
         'PENDING_APPROVAL': 'bg-yellow-100 text-yellow-800',
         'APPROVED': 'bg-green-100 text-green-800',
-        'REJECTED': 'bg-red-100 text-red-800',
         'INITIAL': 'bg-blue-100 text-blue-800',
-        'ARCHIVED': 'bg-gray-100 text-gray-800',
         'PAID': 'bg-emerald-100 text-emerald-800'
       };
-      const style = styles[status] || 'bg-gray-100 text-gray-800';
-      return '<span class="px-2 py-1 text-xs font-medium rounded-full ' + style + '">' + (status ? status.replace(/_/g, ' ') : '') + '</span>';
+      return '<span class="px-2 py-1 text-xs font-medium rounded-full ' + (colors[s] || 'bg-gray-100 text-gray-800') + '">' + (s || '').replace(/_/g, ' ') + '</span>';
     }
 
-    async function fetchInvoices() {
-      hideError();
-      elements.loading.classList.remove('hidden');
-      elements.tableContainer.classList.add('hidden');
-      elements.emptyState.classList.add('hidden');
-
-      const statusFilter = elements.statusFilter.value;
-      const pageSize = elements.pageSize.value;
-
-      let url = API_BASE + '/invoices?page_size=' + pageSize;
-      if (statusFilter) url += '&status=' + statusFilter;
-
-      try {
-        const response = await fetch(url, {
-          headers: {
-            'Authorization': 'Bearer ' + AUTH_TOKEN,
-            'Accept': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error('HTTP ' + response.status + ': ' + response.statusText);
-        }
-
-        const data = await response.json();
-
-        if (data.success && data.data) {
-          const invoices = data.data.list || [];
-          const total = data.data.pagination ? data.data.pagination.total : 0;
-          displayInvoices(invoices, total);
-        } else {
-          throw new Error('Invalid response format');
-        }
-      } catch (err) {
-        showError(err.message);
-      }
+    async function fetchPage(url) {
+      const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + TOKEN, 'Accept': 'application/json' } });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
     }
 
-    function displayInvoices(invoices, total) {
-      elements.loading.classList.add('hidden');
-
-      if (invoices.length === 0) {
-        elements.emptyState.classList.remove('hidden');
-        return;
-      }
-
-      elements.tableContainer.classList.remove('hidden');
-      elements.stats.classList.remove('hidden');
-      elements.stats.querySelector('p').textContent = 'Showing ' + invoices.length + ' of ' + total.toLocaleString() + ' total invoices';
-
-      elements.tableBody.innerHTML = invoices.map(function(invoice) {
-        return '<tr class="hover:bg-gray-50 transition-colors">' +
-          '<td class="px-4 py-3 text-sm font-medium text-gray-900">' + (invoice.invoice_number || invoice.invoice_id) + '</td>' +
-          '<td class="px-4 py-3 text-sm text-gray-700">' + (invoice.vendor && invoice.vendor.name ? invoice.vendor.name : 'N/A') + '</td>' +
-          '<td class="px-4 py-3 text-sm font-semibold text-gray-900">' + formatCurrency(invoice.amount, invoice.currency) + '</td>' +
-          '<td class="px-4 py-3 text-sm text-gray-600">' + formatDate(invoice.invoice_date) + '</td>' +
-          '<td class="px-4 py-3 text-sm text-gray-600">' + formatDate(invoice.due_date) + '</td>' +
-          '<td class="px-4 py-3 text-sm">' + getStatusBadge(invoice.status) + '</td>' +
-          '<td class="px-4 py-3 text-sm text-gray-600">' + (invoice.department && invoice.department.name ? invoice.department.name : 'N/A') + '</td>' +
-        '</tr>';
-      }).join('');
-    }
-
-    async function fetchAllInvoices() {
-      const allInvoices = [];
-      let pageToken = null;
-      let pageNum = 0;
-
+    async function fetchAllInvoices(onProgress) {
+      let all = [];
+      let token = null;
+      let page = 0;
       do {
-        pageNum++;
-        document.getElementById('loadingProgress').textContent = 'Fetching page ' + pageNum + '...';
-
-        let url = API_BASE + '/invoices?page_size=100';
-        if (pageToken) url += '&page_token=' + encodeURIComponent(pageToken);
-
-        const response = await fetch(url, {
-          headers: {
-            'Authorization': 'Bearer ' + AUTH_TOKEN,
-            'Accept': 'application/json'
-          }
-        });
-
-        if (!response.ok) throw new Error('Failed to fetch invoices');
-
-        const data = await response.json();
-        const invoices = data.data.list || [];
-
-        allInvoices.push(...invoices);
-        document.getElementById('loadingProgress').textContent = 'Loaded ' + allInvoices.length + ' invoices...';
-
-        pageToken = data.data.pagination && data.data.pagination.next_page_token;
-      } while (pageToken);
-
-      return allInvoices;
+        page++;
+        if (onProgress) onProgress(page, all.length);
+        let url = API + '/invoices?page_size=100' + (token ? '&page_token=' + encodeURIComponent(token) : '');
+        const data = await fetchPage(url);
+        const list = data.data?.list || [];
+        all.push(...list);
+        token = data.data?.pagination?.next_page_token;
+      } while (token);
+      return all;
     }
 
-    async function fetchMetrics() {
-      document.getElementById('metricsLoading').classList.remove('hidden');
-      document.getElementById('metricsContent').classList.add('hidden');
-      document.getElementById('loadingText').textContent = 'Fetching all invoices...';
-
+    document.getElementById('fetchBtn').onclick = async function() {
+      document.getElementById('invLoading').classList.remove('hidden');
+      document.getElementById('invTable').classList.add('hidden');
       try {
-        const allInvoices = await fetchAllInvoices();
+        const status = document.getElementById('statusFilter').value;
+        const size = document.getElementById('pageSize').value;
+        let url = API + '/invoices?page_size=' + size + (status ? '&status=' + status : '');
+        const data = await fetchPage(url);
+        const invs = data.data?.list || [];
+        const total = data.data?.pagination?.total || 0;
 
-        // Filter for invoices since Feb 1, 2025
-        const filteredInvoices = allInvoices.filter(inv => {
-          const createdDate = new Date(inv.created_at);
-          return createdDate >= FEB_1_2025;
+        document.getElementById('invStats').classList.remove('hidden');
+        document.getElementById('invStats').querySelector('p').textContent = 'Showing ' + invs.length + ' of ' + total.toLocaleString() + ' total invoices';
+
+        document.getElementById('invBody').innerHTML = invs.map(i => 
+          '<tr class="hover:bg-gray-50">' +
+          '<td class="px-4 py-3 text-sm font-medium">' + (i.invoice_number || i.invoice_id || '-') + '</td>' +
+          '<td class="px-4 py-3 text-sm">' + (i.vendor?.name || 'N/A') + '</td>' +
+          '<td class="px-4 py-3 text-sm font-semibold">' + fmt(i.amount, i.currency) + '</td>' +
+          '<td class="px-4 py-3 text-sm text-gray-600">' + fmtDate(i.invoice_date || i.created_at) + '</td>' +
+          '<td class="px-4 py-3 text-sm">' + badge(i.status) + '</td>' +
+          '<td class="px-4 py-3 text-sm text-gray-600">' + (i.department?.name || 'N/A') + '</td>' +
+          '</tr>'
+        ).join('');
+
+        document.getElementById('invTable').classList.remove('hidden');
+      } catch(e) {
+        alert('Error: ' + e.message);
+      }
+      document.getElementById('invLoading').classList.add('hidden');
+    };
+
+    document.getElementById('fetchMetrics').onclick = async function() {
+      document.getElementById('metLoading').classList.remove('hidden');
+      document.getElementById('metContent').classList.add('hidden');
+      try {
+        const all = await fetchAllInvoices((p, count) => {
+          document.getElementById('metLoadText').textContent = 'Fetching page ' + p + '...';
+          document.getElementById('metProgress').textContent = 'Loaded ' + count + ' invoices';
         });
 
-        document.getElementById('loadingText').textContent = 'Analyzing ' + filteredInvoices.length + ' invoices...';
+        const filtered = all.filter(i => new Date(i.created_at).getTime() >= FEB_1_2025);
 
-        // Calculate metrics
-        calculateAndDisplayMetrics(filteredInvoices);
+        document.getElementById('metTotal').textContent = filtered.length.toLocaleString();
+        document.getElementById('metPending').textContent = filtered.filter(i => i.status === 'PENDING_APPROVAL').length;
 
-      } catch (err) {
-        alert('Error loading metrics: ' + err.message);
-      } finally {
-        document.getElementById('metricsLoading').classList.add('hidden');
-      }
-    }
+        const totalSpend = filtered.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
+        document.getElementById('metSpend').textContent = fmt(totalSpend);
 
-    function calculateAndDisplayMetrics(invoices) {
-      // Total invoices
-      document.getElementById('totalInvoices').textContent = invoices.length.toLocaleString();
-
-      // Pending approvals
-      const pending = invoices.filter(inv => inv.status === 'PENDING_APPROVAL').length;
-      document.getElementById('pendingApprovals').textContent = pending.toLocaleString();
-
-      // Total spend
-      const totalSpend = invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
-      document.getElementById('totalSpend').textContent = formatCurrency(totalSpend);
-
-      // Average coding time
-      const codedInvoices = invoices.filter(inv => inv.coded_at && inv.created_at);
-      if (codedInvoices.length > 0) {
-        const avgTime = codedInvoices.reduce((sum, inv) => {
-          const days = (new Date(inv.coded_at) - new Date(inv.created_at)) / (1000 * 60 * 60 * 24);
-          return sum + days;
-        }, 0) / codedInvoices.length;
-        document.getElementById('avgCodingTime').textContent = avgTime.toFixed(1);
-      } else {
-        document.getElementById('avgCodingTime').textContent = 'N/A';
-      }
-
-      // Status breakdown chart
-      createStatusChart(invoices);
-
-      // Coding time distribution
-      createCodingTimeChart(codedInvoices);
-
-      // Department spend
-      createDepartmentChart(invoices);
-
-      // Coder leaderboard
-      createCoderLeaderboard(invoices);
-
-      document.getElementById('metricsContent').classList.remove('hidden');
-    }
-
-    function createStatusChart(invoices) {
-      const statusCounts = {};
-      invoices.forEach(inv => {
-        const status = inv.status || 'UNKNOWN';
-        statusCounts[status] = (statusCounts[status] || 0) + 1;
-      });
-
-      const ctx = document.getElementById('statusChart');
-      if (charts.status) charts.status.destroy();
-      charts.status = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: Object.keys(statusCounts),
-          datasets: [{
-            label: 'Invoice Count',
-            data: Object.values(statusCounts),
-            backgroundColor: 'rgba(59, 130, 246, 0.5)',
-            borderColor: 'rgb(59, 130, 246)',
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          plugins: { legend: { display: false } }
+        const coded = filtered.filter(i => i.coded_at && i.created_at);
+        if (coded.length > 0) {
+          const avgDays = coded.reduce((sum, i) => {
+            const days = (new Date(i.coded_at).getTime() - new Date(i.created_at).getTime()) / (1000 * 60 * 60 * 24);
+            return sum + days;
+          }, 0) / coded.length;
+          document.getElementById('metAvgTime').textContent = avgDays.toFixed(1);
+        } else {
+          document.getElementById('metAvgTime').textContent = 'N/A';
         }
-      });
-    }
 
-    function createCodingTimeChart(codedInvoices) {
-      const buckets = { '<7 days': 0, '7-14 days': 0, '>14 days': 0 };
-      codedInvoices.forEach(inv => {
-        const days = (new Date(inv.coded_at) - new Date(inv.created_at)) / (1000 * 60 * 60 * 24);
-        if (days < 7) buckets['<7 days']++;
-        else if (days <= 14) buckets['7-14 days']++;
-        else buckets['>14 days']++;
-      });
+        // Status chart
+        const statusCount = {};
+        filtered.forEach(i => {
+          const s = i.status || 'UNKNOWN';
+          statusCount[s] = (statusCount[s] || 0) + 1;
+        });
+        if (charts.status) charts.status.destroy();
+        charts.status = new Chart(document.getElementById('statusChart'), {
+          type: 'bar',
+          data: {
+            labels: Object.keys(statusCount),
+            datasets: [{ data: Object.values(statusCount), backgroundColor: 'rgba(59, 130, 246, 0.5)' }]
+          },
+          options: { responsive: true, plugins: { legend: { display: false } } }
+        });
 
-      const ctx = document.getElementById('codingTimeChart');
-      if (charts.codingTime) charts.codingTime.destroy();
-      charts.codingTime = new Chart(ctx, {
-        type: 'pie',
-        data: {
-          labels: Object.keys(buckets),
-          datasets: [{
-            data: Object.values(buckets),
-            backgroundColor: ['rgba(34, 197, 94, 0.5)', 'rgba(251, 191, 36, 0.5)', 'rgba(239, 68, 68, 0.5)']
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true
-        }
-      });
-    }
-
-    function createDepartmentChart(invoices) {
-      const deptSpend = {};
-      invoices.forEach(inv => {
-        const dept = (inv.department && inv.department.name) || 'Unknown';
-        deptSpend[dept] = (deptSpend[dept] || 0) + (inv.amount || 0);
-      });
-
-      const sorted = Object.entries(deptSpend).sort((a, b) => b[1] - a[1]).slice(0, 10);
-
-      const ctx = document.getElementById('departmentChart');
-      if (charts.department) charts.department.destroy();
-      charts.department = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: sorted.map(e => e[0]),
-          datasets: [{
-            label: 'Spend ($)',
-            data: sorted.map(e => e[1]),
-            backgroundColor: 'rgba(34, 197, 94, 0.5)',
-            borderColor: 'rgb(34, 197, 94)',
-            borderWidth: 1
-          }]
-        },
-        options: {
-          indexAxis: 'y',
-          responsive: true,
-          maintainAspectRatio: true,
-          plugins: { legend: { display: false } }
-        }
-      });
-    }
-
-    function createCoderLeaderboard(invoices) {
-      const coderStats = {};
-
-      invoices.forEach(inv => {
-        if (inv.coded_by && inv.coded_by.name) {
-          const coder = inv.coded_by.name;
-          if (!coderStats[coder]) {
-            coderStats[coder] = { count: 0, totalDays: 0 };
+        // Time distribution
+        const buckets = { '<7d': 0, '7-14d': 0, '>14d': 0 };
+        coded.forEach(i => {
+          const days = (new Date(i.coded_at).getTime() - new Date(i.created_at).getTime()) / (1000 * 60 * 60 * 24);
+          if (days < 7) buckets['<7d']++;
+          else if (days <= 14) buckets['7-14d']++;
+          else buckets['>14d']++;
+        });
+        if (charts.time) charts.time.destroy();
+        charts.time = new Chart(document.getElementById('timeChart'), {
+          type: 'pie',
+          data: {
+            labels: Object.keys(buckets),
+            datasets: [{ data: Object.values(buckets), backgroundColor: ['#22c55e', '#eab308', '#ef4444'] }]
           }
-          coderStats[coder].count++;
+        });
 
-          if (inv.coded_at && inv.created_at) {
-            const days = (new Date(inv.coded_at) - new Date(inv.created_at)) / (1000 * 60 * 60 * 24);
-            coderStats[coder].totalDays += days;
-          }
-        }
+        // Dept spend
+        const deptSpend = {};
+        filtered.forEach(i => {
+          const d = i.department?.name || 'Unknown';
+          deptSpend[d] = (deptSpend[d] || 0) + (parseFloat(i.amount) || 0);
+        });
+        const topDepts = Object.entries(deptSpend).sort((a, b) => b[1] - a[1]).slice(0, 10);
+        if (charts.dept) charts.dept.destroy();
+        charts.dept = new Chart(document.getElementById('deptChart'), {
+          type: 'bar',
+          data: {
+            labels: topDepts.map(e => e[0]),
+            datasets: [{ data: topDepts.map(e => e[1]), backgroundColor: 'rgba(34, 197, 94, 0.5)' }]
+          },
+          options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
+        });
+
+        // Coders - analyze by looking for patterns in invoice data
+        // Since we don't have coded_by field, we'll show a note
+        document.getElementById('coderTable').innerHTML = 
+          '<tr><td colspan="3" class="px-4 py-3 text-sm text-gray-500">Coder tracking requires additional API field (coded_by). Contact Zip support to enable this field.</td></tr>';
+
+        document.getElementById('metContent').classList.remove('hidden');
+      } catch(e) {
+        alert('Error loading metrics: ' + e.message);
+      }
+      document.getElementById('metLoading').classList.add('hidden');
+    };
+
+    document.getElementById('fetchVendors').onclick = async function() {
+      const all = await fetchAllInvoices();
+      const vendSpend = {};
+      const vendCount = {};
+      all.forEach(i => {
+        const v = i.vendor?.name || 'Unknown';
+        vendSpend[v] = (vendSpend[v] || 0) + (parseFloat(i.amount) || 0);
+        vendCount[v] = (vendCount[v] || 0) + 1;
       });
-
-      const sorted = Object.entries(coderStats)
-        .map(([name, stats]) => ({
-          name,
-          count: stats.count,
-          avgDays: stats.count > 0 ? (stats.totalDays / stats.count).toFixed(1) : 'N/A'
-        }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 10);
-
-      const tbody = document.getElementById('coderTableBody');
-      tbody.innerHTML = sorted.map((coder, idx) => 
-        '<tr>' +
-        '<td class="px-4 py-3 text-sm font-medium text-gray-900">' + (idx + 1) + '</td>' +
-        '<td class="px-4 py-3 text-sm text-gray-700">' + coder.name + '</td>' +
-        '<td class="px-4 py-3 text-sm font-semibold text-gray-900">' + coder.count + '</td>' +
-        '<td class="px-4 py-3 text-sm text-gray-600">' + coder.avgDays + '</td>' +
-        '</tr>'
+      const top = Object.entries(vendSpend).sort((a, b) => b[1] - a[1]).slice(0, 20);
+      document.getElementById('vendTable').innerHTML = top.map((e, i) => 
+        '<tr><td class="px-4 py-3 text-sm font-medium">' + (i + 1) + '</td>' +
+        '<td class="px-4 py-3 text-sm">' + e[0] + '</td>' +
+        '<td class="px-4 py-3 text-sm font-semibold">' + fmt(e[1]) + '</td>' +
+        '<td class="px-4 py-3 text-sm">' + vendCount[e[0]] + '</td></tr>'
       ).join('');
-    }
-
-    elements.fetchBtn.addEventListener('click', fetchInvoices);
-    document.getElementById('fetchMetrics').addEventListener('click', fetchMetrics);
+      document.getElementById('vendContent').classList.remove('hidden');
+    };
   </script>
 </body>
 </html>
