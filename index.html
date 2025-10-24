@@ -5,8 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ZipHQ Analytics Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    .stat-card { transition: transform 0.2s; }
+    .stat-card:hover { transform: translateY(-2px); }
   </style>
 </head>
 <body class="min-h-screen bg-gray-50 p-6">
@@ -22,14 +25,14 @@
         <button onclick="showTab('invoices')" id="tab-invoices" class="tab-btn border-b-2 border-blue-500 py-4 px-1 text-sm font-medium text-blue-600">
           Invoices
         </button>
+        <button onclick="showTab('metrics')" id="tab-metrics" class="tab-btn border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+          Metrics
+        </button>
         <button onclick="showTab('requests')" id="tab-requests" class="tab-btn border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
           Requests
         </button>
         <button onclick="showTab('pos')" id="tab-pos" class="tab-btn border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
           Purchase Orders
-        </button>
-        <button onclick="showTab('metrics')" id="tab-metrics" class="tab-btn border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
-          Metrics
         </button>
         <button onclick="showTab('vendors')" id="tab-vendors" class="tab-btn border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
           Vendor Spend
@@ -109,6 +112,119 @@
       </div>
     </div>
 
+    <!-- Metrics Tab -->
+    <div id="content-metrics" class="tab-content hidden">
+      <button id="fetchMetrics" class="mb-6 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium transition-colors">
+        Load Metrics
+      </button>
+
+      <div id="metricsLoading" class="bg-white rounded-lg shadow-sm p-12 text-center hidden">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p class="text-gray-600">Analyzing invoice data...</p>
+      </div>
+
+      <div id="metricsContent" class="hidden">
+        <!-- Stat Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <div class="stat-card bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">Total Invoices</p>
+                <p id="totalInvoices" class="text-3xl font-bold text-gray-900 mt-2">-</p>
+              </div>
+              <div class="p-3 bg-blue-100 rounded-full">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-card bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">Avg Coding Time</p>
+                <p id="avgCodingTime" class="text-3xl font-bold text-gray-900 mt-2">-</p>
+                <p class="text-xs text-gray-500 mt-1">days</p>
+              </div>
+              <div class="p-3 bg-yellow-100 rounded-full">
+                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-card bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">Pending Approvals</p>
+                <p id="pendingApprovals" class="text-3xl font-bold text-gray-900 mt-2">-</p>
+              </div>
+              <div class="p-3 bg-orange-100 rounded-full">
+                <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-card bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">Total Spend</p>
+                <p id="totalSpend" class="text-3xl font-bold text-gray-900 mt-2">-</p>
+              </div>
+              <div class="p-3 bg-green-100 rounded-full">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Row 1 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Invoices by Status</h3>
+            <canvas id="statusChart"></canvas>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Coding Time Distribution</h3>
+            <canvas id="codingTimeChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Charts Row 2 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Top Departments by Spend</h3>
+            <canvas id="departmentChart"></canvas>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Top Invoice Coders</h3>
+            <div id="coderLeaderboard" class="overflow-x-auto">
+              <table class="w-full">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Rank</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Coder</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Invoices Coded</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Avg Time (days)</th>
+                  </tr>
+                </thead>
+                <tbody id="coderTableBody" class="divide-y divide-gray-200">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Other tabs placeholders -->
     <div id="content-requests" class="tab-content hidden">
       <div class="bg-white rounded-lg shadow-sm p-12 text-center">
@@ -121,13 +237,6 @@
       <div class="bg-white rounded-lg shadow-sm p-12 text-center">
         <h3 class="text-lg font-medium text-gray-900 mb-2">Purchase Orders Coming Soon</h3>
         <p class="text-gray-600">Building this section next...</p>
-      </div>
-    </div>
-
-    <div id="content-metrics" class="tab-content hidden">
-      <div class="bg-white rounded-lg shadow-sm p-12 text-center">
-        <h3 class="text-lg font-medium text-gray-900 mb-2">Metrics Coming Soon</h3>
-        <p class="text-gray-600">Invoice coding time, approval delays, and more...</p>
       </div>
     </div>
 
@@ -154,6 +263,8 @@
       emptyState: document.getElementById('emptyState'),
       stats: document.getElementById('stats')
     };
+
+    let charts = {};
 
     function showTab(tab) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -264,7 +375,201 @@
       }).join('');
     }
 
+    async function fetchMetrics() {
+      document.getElementById('metricsLoading').classList.remove('hidden');
+      document.getElementById('metricsContent').classList.add('hidden');
+
+      try {
+        // Fetch ALL invoices for analysis
+        const response = await fetch(API_BASE + '/invoices?page_size=1000', {
+          headers: {
+            'Authorization': 'Bearer ' + AUTH_TOKEN,
+            'Accept': 'application/json'
+          }
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch invoices');
+
+        const data = await response.json();
+        const invoices = data.data.list || [];
+
+        // Calculate metrics
+        calculateAndDisplayMetrics(invoices);
+
+      } catch (err) {
+        alert('Error loading metrics: ' + err.message);
+      } finally {
+        document.getElementById('metricsLoading').classList.add('hidden');
+      }
+    }
+
+    function calculateAndDisplayMetrics(invoices) {
+      // Total invoices
+      document.getElementById('totalInvoices').textContent = invoices.length.toLocaleString();
+
+      // Pending approvals
+      const pending = invoices.filter(inv => inv.status === 'PENDING_APPROVAL').length;
+      document.getElementById('pendingApprovals').textContent = pending.toLocaleString();
+
+      // Total spend
+      const totalSpend = invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
+      document.getElementById('totalSpend').textContent = formatCurrency(totalSpend);
+
+      // Average coding time
+      const codedInvoices = invoices.filter(inv => inv.coded_at && inv.created_at);
+      if (codedInvoices.length > 0) {
+        const avgTime = codedInvoices.reduce((sum, inv) => {
+          const days = (new Date(inv.coded_at) - new Date(inv.created_at)) / (1000 * 60 * 60 * 24);
+          return sum + days;
+        }, 0) / codedInvoices.length;
+        document.getElementById('avgCodingTime').textContent = avgTime.toFixed(1);
+      } else {
+        document.getElementById('avgCodingTime').textContent = 'N/A';
+      }
+
+      // Status breakdown chart
+      createStatusChart(invoices);
+
+      // Coding time distribution
+      createCodingTimeChart(codedInvoices);
+
+      // Department spend
+      createDepartmentChart(invoices);
+
+      // Coder leaderboard
+      createCoderLeaderboard(invoices);
+
+      document.getElementById('metricsContent').classList.remove('hidden');
+    }
+
+    function createStatusChart(invoices) {
+      const statusCounts = {};
+      invoices.forEach(inv => {
+        const status = inv.status || 'UNKNOWN';
+        statusCounts[status] = (statusCounts[status] || 0) + 1;
+      });
+
+      const ctx = document.getElementById('statusChart');
+      if (charts.status) charts.status.destroy();
+      charts.status = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(statusCounts),
+          datasets: [{
+            label: 'Invoice Count',
+            data: Object.values(statusCounts),
+            backgroundColor: 'rgba(59, 130, 246, 0.5)',
+            borderColor: 'rgb(59, 130, 246)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    function createCodingTimeChart(codedInvoices) {
+      const buckets = { '<7 days': 0, '7-14 days': 0, '>14 days': 0 };
+      codedInvoices.forEach(inv => {
+        const days = (new Date(inv.coded_at) - new Date(inv.created_at)) / (1000 * 60 * 60 * 24);
+        if (days < 7) buckets['<7 days']++;
+        else if (days <= 14) buckets['7-14 days']++;
+        else buckets['>14 days']++;
+      });
+
+      const ctx = document.getElementById('codingTimeChart');
+      if (charts.codingTime) charts.codingTime.destroy();
+      charts.codingTime = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: Object.keys(buckets),
+          datasets: [{
+            data: Object.values(buckets),
+            backgroundColor: ['rgba(34, 197, 94, 0.5)', 'rgba(251, 191, 36, 0.5)', 'rgba(239, 68, 68, 0.5)']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true
+        }
+      });
+    }
+
+    function createDepartmentChart(invoices) {
+      const deptSpend = {};
+      invoices.forEach(inv => {
+        const dept = (inv.department && inv.department.name) || 'Unknown';
+        deptSpend[dept] = (deptSpend[dept] || 0) + (inv.amount || 0);
+      });
+
+      const sorted = Object.entries(deptSpend).sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+      const ctx = document.getElementById('departmentChart');
+      if (charts.department) charts.department.destroy();
+      charts.department = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: sorted.map(e => e[0]),
+          datasets: [{
+            label: 'Spend ($)',
+            data: sorted.map(e => e[1]),
+            backgroundColor: 'rgba(34, 197, 94, 0.5)',
+            borderColor: 'rgb(34, 197, 94)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    function createCoderLeaderboard(invoices) {
+      const coderStats = {};
+
+      invoices.forEach(inv => {
+        if (inv.coded_by && inv.coded_by.name) {
+          const coder = inv.coded_by.name;
+          if (!coderStats[coder]) {
+            coderStats[coder] = { count: 0, totalDays: 0 };
+          }
+          coderStats[coder].count++;
+
+          if (inv.coded_at && inv.created_at) {
+            const days = (new Date(inv.coded_at) - new Date(inv.created_at)) / (1000 * 60 * 60 * 24);
+            coderStats[coder].totalDays += days;
+          }
+        }
+      });
+
+      const sorted = Object.entries(coderStats)
+        .map(([name, stats]) => ({
+          name,
+          count: stats.count,
+          avgDays: stats.count > 0 ? (stats.totalDays / stats.count).toFixed(1) : 'N/A'
+        }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+
+      const tbody = document.getElementById('coderTableBody');
+      tbody.innerHTML = sorted.map((coder, idx) => 
+        '<tr>' +
+        '<td class="px-4 py-3 text-sm font-medium text-gray-900">' + (idx + 1) + '</td>' +
+        '<td class="px-4 py-3 text-sm text-gray-700">' + coder.name + '</td>' +
+        '<td class="px-4 py-3 text-sm font-semibold text-gray-900">' + coder.count + '</td>' +
+        '<td class="px-4 py-3 text-sm text-gray-600">' + coder.avgDays + '</td>' +
+        '</tr>'
+      ).join('');
+    }
+
     elements.fetchBtn.addEventListener('click', fetchInvoices);
+    document.getElementById('fetchMetrics').addEventListener('click', fetchMetrics);
   </script>
 </body>
 </html>
