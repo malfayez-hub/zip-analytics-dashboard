@@ -115,12 +115,13 @@
     <!-- Metrics Tab -->
     <div id="content-metrics" class="tab-content hidden">
       <button id="fetchMetrics" class="mb-6 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium transition-colors">
-        Load Metrics
+        Load Metrics (Since Feb 1, 2025)
       </button>
 
       <div id="metricsLoading" class="bg-white rounded-lg shadow-sm p-12 text-center hidden">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p class="text-gray-600">Analyzing invoice data...</p>
+        <p id="loadingText" class="text-gray-600">Fetching all invoices...</p>
+        <p id="loadingProgress" class="text-sm text-gray-500 mt-2"></p>
       </div>
 
       <div id="metricsContent" class="hidden">
@@ -131,6 +132,7 @@
               <div>
                 <p class="text-sm font-medium text-gray-600">Total Invoices</p>
                 <p id="totalInvoices" class="text-3xl font-bold text-gray-900 mt-2">-</p>
+                <p class="text-xs text-gray-500 mt-1">Since Feb 1, 2025</p>
               </div>
               <div class="p-3 bg-blue-100 rounded-full">
                 <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -251,6 +253,7 @@
   <script>
     const API_BASE = 'https://ziphq-middleware-connector-production.up.railway.app/api';
     const AUTH_TOKEN = 'db590f86e8119131dfdfa2ac42552a3bd371c3f83f8935a8eed400e64a7ad810';
+    const FEB_1_2025 = new Date('2025-02-01T00:00:00Z');
 
     const elements = {
       fetchBtn: document.getElementById('fetchBtn'),
@@ -375,13 +378,19 @@
       }).join('');
     }
 
-    async function fetchMetrics() {
-      document.getElementById('metricsLoading').classList.remove('hidden');
-      document.getElementById('metricsContent').classList.add('hidden');
+    async function fetchAllInvoices() {
+      const allInvoices = [];
+      let pageToken = null;
+      let pageNum = 0;
 
-      try {
-        // Fetch ALL invoices for analysis
-        const response = await fetch(API_BASE + '/invoices?page_size=1000', {
+      do {
+        pageNum++;
+        document.getElementById('loadingProgress').textContent = 'Fetching page ' + pageNum + '...';
+
+        let url = API_BASE + '/invoices?page_size=100';
+        if (pageToken) url += '&page_token=' + encodeURIComponent(pageToken);
+
+        const response = await fetch(url, {
           headers: {
             'Authorization': 'Bearer ' + AUTH_TOKEN,
             'Accept': 'application/json'
@@ -393,8 +402,33 @@
         const data = await response.json();
         const invoices = data.data.list || [];
 
+        allInvoices.push(...invoices);
+        document.getElementById('loadingProgress').textContent = 'Loaded ' + allInvoices.length + ' invoices...';
+
+        pageToken = data.data.pagination && data.data.pagination.next_page_token;
+      } while (pageToken);
+
+      return allInvoices;
+    }
+
+    async function fetchMetrics() {
+      document.getElementById('metricsLoading').classList.remove('hidden');
+      document.getElementById('metricsContent').classList.add('hidden');
+      document.getElementById('loadingText').textContent = 'Fetching all invoices...';
+
+      try {
+        const allInvoices = await fetchAllInvoices();
+
+        // Filter for invoices since Feb 1, 2025
+        const filteredInvoices = allInvoices.filter(inv => {
+          const createdDate = new Date(inv.created_at);
+          return createdDate >= FEB_1_2025;
+        });
+
+        document.getElementById('loadingText').textContent = 'Analyzing ' + filteredInvoices.length + ' invoices...';
+
         // Calculate metrics
-        calculateAndDisplayMetrics(invoices);
+        calculateAndDisplayMetrics(filteredInvoices);
 
       } catch (err) {
         alert('Error loading metrics: ' + err.message);
