@@ -8,8 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-    .stat-card { transition: transform 0.2s; }
-    .stat-card:hover { transform: translateY(-2px); }
+    .stat-card:hover { transform: translateY(-2px); transition: transform 0.2s; }
   </style>
 </head>
 <body class="min-h-screen bg-gray-50 p-6">
@@ -27,7 +26,6 @@
       </nav>
     </div>
 
-    <!-- Invoices Tab -->
     <div id="content-invoices" class="tab-content">
       <div class="bg-white rounded-lg shadow p-4 mb-6">
         <div class="flex flex-wrap gap-4 items-end">
@@ -74,7 +72,6 @@
       </div>
     </div>
 
-    <!-- Metrics Tab -->
     <div id="content-metrics" class="tab-content hidden">
       <button id="fetchMetrics" class="mb-6 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium">Load All Metrics (Since Feb 1, 2025)</button>
       <div id="metLoading" class="bg-white rounded-lg shadow p-12 text-center hidden">
@@ -119,7 +116,7 @@
             <canvas id="deptChart"></canvas>
           </div>
           <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-lg font-semibold mb-4">Invoice Coders (Isheba & Kevin)</h3>
+            <h3 class="text-lg font-semibold mb-4">Invoices by Coder</h3>
             <table class="w-full">
               <thead class="bg-gray-50">
                 <tr>
@@ -135,7 +132,6 @@
       </div>
     </div>
 
-    <!-- Vendors Tab -->
     <div id="content-vendors" class="tab-content hidden">
       <button id="fetchVendors" class="mb-6 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium">Load Vendor Spend</button>
       <div id="vendContent" class="hidden">
@@ -160,7 +156,7 @@
   <script>
     const API = 'https://ziphq-middleware-connector-production.up.railway.app/api';
     const TOKEN = 'db590f86e8119131dfdfa2ac42552a3bd371c3f83f8935a8eed400e64a7ad810';
-    const FEB_1_2025 = new Date('2025-02-01T00:00:00Z').getTime();
+    const FEB_1_2025 = new Date('2025-02-01').getTime();
     let charts = {};
 
     function showTab(tab) {
@@ -173,6 +169,22 @@
       const btn = document.getElementById('tab-' + tab);
       btn.classList.remove('border-transparent', 'text-gray-500');
       btn.classList.add('border-blue-500', 'text-blue-600');
+    }
+
+    function getInvoiceDate(inv) {
+      // Check multiple date fields in priority order
+      return inv.receipt_date || inv.invoice_date || inv.created_at || inv.received_at;
+    }
+
+    function getCodedDate(inv) {
+      return inv.coded_at || inv.coded_date;
+    }
+
+    function isAfterFeb2025(inv) {
+      const dateStr = getInvoiceDate(inv);
+      if (!dateStr) return false;
+      const d = new Date(dateStr).getTime();
+      return d >= FEB_1_2025;
     }
 
     function fmt(n, c = 'USD') {
@@ -189,7 +201,8 @@
         'PENDING_APPROVAL': 'bg-yellow-100 text-yellow-800',
         'APPROVED': 'bg-green-100 text-green-800',
         'INITIAL': 'bg-blue-100 text-blue-800',
-        'PAID': 'bg-emerald-100 text-emerald-800'
+        'PAID': 'bg-emerald-100 text-emerald-800',
+        'ARCHIVED': 'bg-gray-100 text-gray-800'
       };
       return '<span class="px-2 py-1 text-xs font-medium rounded-full ' + (colors[s] || 'bg-gray-100 text-gray-800') + '">' + (s || '').replace(/_/g, ' ') + '</span>';
     }
@@ -235,7 +248,7 @@
           '<td class="px-4 py-3 text-sm font-medium">' + (i.invoice_number || i.invoice_id || '-') + '</td>' +
           '<td class="px-4 py-3 text-sm">' + (i.vendor?.name || 'N/A') + '</td>' +
           '<td class="px-4 py-3 text-sm font-semibold">' + fmt(i.amount, i.currency) + '</td>' +
-          '<td class="px-4 py-3 text-sm text-gray-600">' + fmtDate(i.invoice_date || i.created_at) + '</td>' +
+          '<td class="px-4 py-3 text-sm text-gray-600">' + fmtDate(getInvoiceDate(i)) + '</td>' +
           '<td class="px-4 py-3 text-sm">' + badge(i.status) + '</td>' +
           '<td class="px-4 py-3 text-sm text-gray-600">' + (i.department?.name || 'N/A') + '</td>' +
           '</tr>'
@@ -257,7 +270,11 @@
           document.getElementById('metProgress').textContent = 'Loaded ' + count + ' invoices';
         });
 
-        const filtered = all.filter(i => new Date(i.created_at).getTime() >= FEB_1_2025);
+        // Filter invoices since Feb 1, 2025
+        const filtered = all.filter(i => isAfterFeb2025(i));
+
+        console.log('Total invoices fetched:', all.length);
+        console.log('Filtered since Feb 1, 2025:', filtered.length);
 
         document.getElementById('metTotal').textContent = filtered.length.toLocaleString();
         document.getElementById('metPending').textContent = filtered.filter(i => i.status === 'PENDING_APPROVAL').length;
@@ -265,10 +282,18 @@
         const totalSpend = filtered.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
         document.getElementById('metSpend').textContent = fmt(totalSpend);
 
-        const coded = filtered.filter(i => i.coded_at && i.created_at);
+        // Calculate coding time: receipt_date to coded_date
+        const coded = filtered.filter(i => {
+          const receiptDate = i.receipt_date || i.received_at || i.created_at;
+          const codedDate = getCodedDate(i);
+          return receiptDate && codedDate;
+        });
+
         if (coded.length > 0) {
           const avgDays = coded.reduce((sum, i) => {
-            const days = (new Date(i.coded_at).getTime() - new Date(i.created_at).getTime()) / (1000 * 60 * 60 * 24);
+            const receiptDate = i.receipt_date || i.received_at || i.created_at;
+            const codedDate = getCodedDate(i);
+            const days = (new Date(codedDate).getTime() - new Date(receiptDate).getTime()) / (1000 * 60 * 60 * 24);
             return sum + days;
           }, 0) / coded.length;
           document.getElementById('metAvgTime').textContent = avgDays.toFixed(1);
@@ -295,7 +320,9 @@
         // Time distribution
         const buckets = { '<7d': 0, '7-14d': 0, '>14d': 0 };
         coded.forEach(i => {
-          const days = (new Date(i.coded_at).getTime() - new Date(i.created_at).getTime()) / (1000 * 60 * 60 * 24);
+          const receiptDate = i.receipt_date || i.received_at || i.created_at;
+          const codedDate = getCodedDate(i);
+          const days = (new Date(codedDate).getTime() - new Date(receiptDate).getTime()) / (1000 * 60 * 60 * 24);
           if (days < 7) buckets['<7d']++;
           else if (days <= 14) buckets['7-14d']++;
           else buckets['>14d']++;
@@ -326,23 +353,54 @@
           options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
         });
 
-        // Coders - analyze by looking for patterns in invoice data
-        // Since we don't have coded_by field, we'll show a note
-        document.getElementById('coderTable').innerHTML = 
-          '<tr><td colspan="3" class="px-4 py-3 text-sm text-gray-500">Coder tracking requires additional API field (coded_by). Contact Zip support to enable this field.</td></tr>';
+        // Coders: Look for coded_by field
+        const coderStats = {};
+        filtered.forEach(i => {
+          if (i.coded_by && i.coded_by.name) {
+            const coder = i.coded_by.name;
+            if (!coderStats[coder]) coderStats[coder] = { count: 0, totalDays: 0 };
+            coderStats[coder].count++;
+
+            const receiptDate = i.receipt_date || i.received_at || i.created_at;
+            const codedDate = getCodedDate(i);
+            if (receiptDate && codedDate) {
+              const days = (new Date(codedDate).getTime() - new Date(receiptDate).getTime()) / (1000 * 60 * 60 * 24);
+              coderStats[coder].totalDays += days;
+            }
+          }
+        });
+
+        if (Object.keys(coderStats).length > 0) {
+          const sorted = Object.entries(coderStats).map(([name, stats]) => ({
+            name,
+            count: stats.count,
+            avgDays: stats.count > 0 ? (stats.totalDays / stats.count).toFixed(1) : 'N/A'
+          })).sort((a, b) => b.count - a.count);
+
+          document.getElementById('coderTable').innerHTML = sorted.map(c => 
+            '<tr><td class="px-4 py-3 text-sm">' + c.name + '</td>' +
+            '<td class="px-4 py-3 text-sm font-semibold">' + c.count + '</td>' +
+            '<td class="px-4 py-3 text-sm">' + c.avgDays + '</td></tr>'
+          ).join('');
+        } else {
+          document.getElementById('coderTable').innerHTML = 
+            '<tr><td colspan="3" class="px-4 py-3 text-sm text-gray-500">No coder data available (coded_by field not found in API)</td></tr>';
+        }
 
         document.getElementById('metContent').classList.remove('hidden');
       } catch(e) {
         alert('Error loading metrics: ' + e.message);
+        console.error(e);
       }
       document.getElementById('metLoading').classList.add('hidden');
     };
 
     document.getElementById('fetchVendors').onclick = async function() {
       const all = await fetchAllInvoices();
+      const filtered = all.filter(i => isAfterFeb2025(i));
       const vendSpend = {};
       const vendCount = {};
-      all.forEach(i => {
+      filtered.forEach(i => {
         const v = i.vendor?.name || 'Unknown';
         vendSpend[v] = (vendSpend[v] || 0) + (parseFloat(i.amount) || 0);
         vendCount[v] = (vendCount[v] || 0) + 1;
